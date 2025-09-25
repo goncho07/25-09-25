@@ -323,17 +323,35 @@ const UsersPage: React.FC = () => {
             });
         }
         
-        return results.sort((a, b) => {
-            if (!sortConfig) return 0;
-            const key = (sortConfig.key as keyof GenericUser);
-            const valA = (a as any)[key];
-            const valB = (b as any)[key];
-            if (valA === null || valA === undefined) return 1;
-            if (valB === null || valB === undefined) return -1;
-            if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
-            if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
-            return 0;
-        });
+        if (sortConfig) {
+            const getSortableValue = (user: GenericUser, key: string): string | number => {
+                switch (key) {
+                    case 'fullName': // Corresponds to the 'Nombre' column
+                        return isStudent(user) ? user.fullName.toLowerCase() : user.name.toLowerCase();
+                    case 'role':
+                        return getRole(user);
+                    case 'sede': // Corresponds to the 'Nivel/Área' column
+                        if (isStudent(user)) return `${user.grade} "${user.section}"`;
+                        if (isStaff(user)) return user.area;
+                        return 'N/A';
+                    default:
+                        // Fallback for direct properties like 'status'
+                        const value = (user as any)[key];
+                        return typeof value === 'string' ? value.toLowerCase() : value;
+                }
+            };
+
+            results.sort((a, b) => {
+                const valA = getSortableValue(a, sortConfig.key);
+                const valB = getSortableValue(b, sortConfig.key);
+
+                if (valA < valB) return sortConfig.direction === 'asc' ? -1 : 1;
+                if (valA > valB) return sortConfig.direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+        }
+
+        return results;
     }, [tabFilteredUsers, debouncedChips, sortConfig]);
 
     const paginatedUsers = useMemo(() => {
