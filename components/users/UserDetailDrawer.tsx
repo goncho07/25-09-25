@@ -165,6 +165,7 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({ isOpen, user, allUs
                                         onFormDataChange={setFormData}
                                         onEditToggle={() => setIsInlineEditing(!isInlineEditing)}
                                         allUsers={allUsers}
+                                        onAction={onAction}
                                     />
                                 )}
                                 {activeTab === 'permisos' && <div className="text-center text-slate-500 p-8"><Shield size={40} className="mx-auto mb-2"/>La gestión detallada de permisos estará disponible aquí.</div>}
@@ -187,21 +188,11 @@ const UserDetailDrawer: React.FC<UserDetailDrawerProps> = ({ isOpen, user, allUs
                             </motion.div>
                         </AnimatePresence>
                     </main>
-                    <footer className="p-6 border-t border-slate-200 dark:border-slate-700 shrink-0 flex justify-between items-center gap-2 bg-white dark:bg-slate-800/50">
-                        <div>
-                            {user && (
-                                <div className="flex items-center gap-2">
-                                    <Button variant="destructive-outline" onClick={() => onAction('delete', user)}>Eliminar Usuario</Button>
-                                    <Button variant="secondary" onClick={() => onAction('reset-password', user)}>Restablecer Contraseña</Button>
-                                </div>
-                            )}
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <Button variant="secondary" onClick={() => { onClose(); setIsInlineEditing(false); }}>Cancelar</Button>
-                            <Button variant="primary" onClick={handleSaveClick} disabled={!isInlineEditing}>
-                                <Save size={16}/> Guardar Cambios
-                            </Button>
-                        </div>
+                    <footer className="p-6 border-t border-slate-200 dark:border-slate-700 shrink-0 flex justify-end items-center gap-2 bg-white dark:bg-slate-800/50">
+                        <Button variant="secondary" onClick={() => { onClose(); setIsInlineEditing(false); }}>Cancelar</Button>
+                        <Button variant="primary" onClick={handleSaveClick} disabled={!isInlineEditing}>
+                            <Save size={16}/> Guardar Cambios
+                        </Button>
                     </footer>
                 </motion.div>
             </motion.div>

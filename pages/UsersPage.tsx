@@ -381,22 +381,22 @@ const UsersPage: React.FC = () => {
             />
             
             {/* Role Filter Chips Section */}
-            <motion.div variants={itemVariants} className="flex justify-center pt-4">
+            <motion.div variants={itemVariants} className="flex justify-center pt-2">
                 <RoleFilterChips allUsers={allUsers} activeRole={activeTab} onRoleChange={handleTabChange} />
             </motion.div>
 
             {/* Main content area */}
             <motion.div
                 variants={itemVariants}
-                className="flex flex-col flex-grow mt-4 bg-white dark:bg-slate-900/50 p-4 rounded-xl shadow-lg border border-slate-200/80 dark:border-slate-800"
+                className="flex flex-col flex-grow mt-2 bg-white dark:bg-slate-800/50 p-3 rounded-2xl shadow-lg border border-slate-200/80 dark:border-slate-700/80"
             >
                 {/* Search and Filters */}
-                <div className="w-full max-w-2xl mx-auto">
+                <div className="w-full">
                     <ChipSearchBar chips={chips} setChips={setChips} allUsers={allUsers}/>
                 </div>
 
                 {/* Table */}
-                <div className="flex-grow mt-4">
+                <div className="flex-grow mt-3">
                     <UserTable
                         isLoading={isLoading}
                         users={paginatedUsers}
