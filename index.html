@@ -63,6 +63,22 @@
         }
     </style>
 
+    <script>
+      // Theme initialization script
+      (function() {
+        try {
+          const theme = localStorage.getItem('theme');
+          if (theme === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            // Default to light theme if no setting is found or if it's explicitly set to 'light'
+            document.documentElement.classList.remove('dark');
+          }
+        } catch (e) {
+          console.error("Failed to set initial theme from localStorage", e);
+        }
+      })();
+    </script>
     <script type="importmap">
     {
       "imports": {

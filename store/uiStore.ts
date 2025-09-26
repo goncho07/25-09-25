@@ -14,7 +14,7 @@ interface UIState {
 
 export const useUIStore = create<UIState>((set) => ({
   isSidebarCollapsed: false,
-  theme: 'light',
+  theme: typeof window !== 'undefined' && localStorage.getItem('theme') === 'dark' ? 'dark' : 'light',
   toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
   setSidebarCollapsed: (isCollapsed) => set({ isSidebarCollapsed: isCollapsed }),
   setTheme: (theme) => {
