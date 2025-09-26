@@ -1,15 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, BrainCircuit } from 'lucide-react';
-import { GenericUser, Student } from '../../types';
+import { Search, X, BrainCircuit, AlertCircle } from 'lucide-react';
+import { GenericUser, Student, UserRole, UserStatus } from '../../types';
 import Button from './Button';
 
-// Helper types and functions that were coupled with this component
 export type Chip = {
   id: string;
-  type: 'text' | 'gradeSection' | 'dni' | 'role' | 'tag';
+  type: 'text' | 'gradeSection' | 'dni' | 'role' | 'status';
   value: string;
   label: string;
+  isValid: boolean;
 };
 
 type Suggestion = {
@@ -21,7 +21,9 @@ type Suggestion = {
 
 const isStudent = (user: GenericUser): user is Student => 'studentCode' in user;
 
-// --- ChipSearchBar Component ---
+const VALID_ROLES: UserRole[] = ['Director', 'Administrativo', 'Docente', 'Apoyo', 'Estudiante', 'Apoderado'];
+const VALID_STATUSES: UserStatus[] = ['Activo', 'Inactivo', 'Suspendido', 'Egresado', 'Pendiente'];
+
 const ChipSearchBar: React.FC<{
     chips: Chip[];
     setChips: React.Dispatch<React.SetStateAction<Chip[]>>;
@@ -53,31 +55,49 @@ const ChipSearchBar: React.FC<{
 
             if (activeIndex > -1 && suggestions[activeIndex]) {
                 const sug = suggestions[activeIndex];
-                addChip({ type: sug.type, value: sug.value, label: sug.label });
+                addChip({ type: sug.type, value: sug.value, label: sug.label, isValid: true });
             } else {
-                // Heuristic parsing
                 const trimmedValue = inputValue.trim();
-                if (/^\d{1,2}[a-zA-Z]$/i.test(trimmedValue)) {
-                    addChip({ type: 'gradeSection', value: trimmedValue.toUpperCase(), label: `Grado: ${trimmedValue.toUpperCase()}` });
-                } else if (/^\d{8}$/.test(trimmedValue)) {
-                    addChip({ type: 'dni', value: trimmedValue, label: `DNI: ${trimmedValue}` });
+                const lowerTrimmedValue = trimmedValue.toLowerCase();
+
+                // Check against valid catalogs
+                const matchedRole = VALID_ROLES.find(r => r.toLowerCase() === lowerTrimmedValue);
+                if (matchedRole) {
+                    addChip({ type: 'role', value: matchedRole, label: `Rol: ${matchedRole}`, isValid: true });
+                    return;
+                }
+
+                const matchedStatus = VALID_STATUSES.find(s => s.toLowerCase() === lowerTrimmedValue);
+                if (matchedStatus) {
+                    addChip({ type: 'status', value: matchedStatus, label: `Estado: ${matchedStatus}`, isValid: true });
+                    return;
+                }
+
+                if (/^\d{8}$/.test(trimmedValue) && allUsers.some(u => (isStudent(u) ? u.documentNumber : u.dni) === trimmedValue)) {
+                     addChip({ type: 'dni', value: trimmedValue, label: `DNI: ${trimmedValue}`, isValid: true });
+                     return;
+                }
+
+                // If no valid criteria match, add as text search or invalid chip
+                if(allUsers.some(u => (isStudent(u) ? u.fullName : u.name).toLowerCase().includes(lowerTrimmedValue))) {
+                    addChip({ type: 'text', value: trimmedValue, label: trimmedValue, isValid: true });
                 } else {
-                    addChip({ type: 'text', value: trimmedValue, label: trimmedValue });
+                    addChip({ type: 'text', value: trimmedValue, label: `Inválido: "${trimmedValue}"`, isValid: false });
                 }
             }
         } else if (e.key === 'Backspace' && inputValue === '' && chips.length > 0) {
             removeChip(chips[chips.length - 1].id);
         } else if (e.key === 'ArrowDown') {
             e.preventDefault();
-            setActiveIndex(prev => (prev + 1) % suggestions.length);
+            setActiveIndex(prev => (prev + 1) % (suggestions.length || 1));
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
-            setActiveIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
+            setActiveIndex(prev => (prev - 1 + (suggestions.length || 0)) % (suggestions.length || 1));
         }
     };
 
     useEffect(() => {
-        if (inputValue.length < 3) {
+        if (inputValue.length < 2) {
             setSuggestions([]);
             return;
         }
@@ -85,37 +105,28 @@ const ChipSearchBar: React.FC<{
         const lowerInput = inputValue.toLowerCase();
         const newSuggestions: Suggestion[] = [];
 
-        // Grade/Section suggestions
-        if (/^\d{1,2}[a-zA-Z]?$/.test(lowerInput)) {
-            const grades = ['1A', '1B', '2A', '3C', '4B', '5F'];
-            grades.forEach(g => {
-                if(g.toLowerCase().startsWith(lowerInput) && newSuggestions.length < 5) {
-                    newSuggestions.push({ type: 'gradeSection', value: g, label: g, category: 'Grado-Sección' });
-                }
-            });
-        }
+        // Role suggestions
+        VALID_ROLES.forEach(role => {
+            if(role.toLowerCase().includes(lowerInput)) newSuggestions.push({type: 'role', value: role, label: role, category: 'Rol'});
+        });
+
+        // Status suggestions
+        VALID_STATUSES.forEach(status => {
+            if(status.toLowerCase().includes(lowerInput)) newSuggestions.push({type: 'status', value: status, label: status, category: 'Estado'});
+        });
 
         // User name suggestions
         allUsers.forEach(user => {
             const name = isStudent(user) ? user.fullName : user.name;
-            if (name.toLowerCase().includes(lowerInput) && newSuggestions.length < 5) {
-                newSuggestions.push({ type: 'text', value: name, label: name, category: 'Nombre' });
+            if (name.toLowerCase().includes(lowerInput) && newSuggestions.length < 10) {
+                if(!newSuggestions.some(s => s.value === name)) {
+                    newSuggestions.push({ type: 'text', value: name, label: name, category: 'Nombre' });
+                }
             }
         });
 
-        // DNI suggestions
-        if(/^\d+$/.test(lowerInput)) {
-             allUsers.forEach(user => {
-                const dni = isStudent(user) ? user.documentNumber : user.dni;
-                if(dni.startsWith(lowerInput) && newSuggestions.length < 5) {
-                     newSuggestions.push({ type: 'dni', value: dni, label: dni, category: 'DNI' });
-                }
-            });
-        }
-
-        setSuggestions(newSuggestions);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [inputValue]);
+        setSuggestions([...newSuggestions].slice(0, 7));
+    }, [inputValue, allUsers]);
 
     const highlightMatch = (text: string, query: string) => {
         const parts = text.split(new RegExp(`(${query})`, 'gi'));
@@ -131,9 +142,30 @@ const ChipSearchBar: React.FC<{
                 <div className="flex items-center gap-2 pl-10 pr-4 py-2 w-full border border-slate-300 dark:border-slate-600 rounded-full bg-white dark:bg-slate-700 focus-within:ring-2 focus-within:ring-indigo-500 transition">
                     <div className="flex items-center gap-1.5 flex-wrap">
                       {chips.map(chip => (
-                          <motion.div key={chip.id} layout initial={{ scale: 0.5 }} animate={{ scale: 1 }} className="flex items-center gap-1.5 bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 text-sm font-semibold pl-2.5 pr-1 py-0.5 rounded-full">
+                          <motion.div
+                            key={chip.id}
+                            layout
+                            initial={{ scale: 0.5 }}
+                            animate={{ scale: 1 }}
+                            className={`flex items-center gap-1.5 text-sm font-semibold pl-2.5 pr-1 py-0.5 rounded-full
+                                ${chip.isValid
+                                    ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
+                                    : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300'
+                                }
+                            `}
+                            title={!chip.isValid ? "Criterio no válido. No se aplicará como filtro." : ""}
+                          >
+                              {!chip.isValid && <AlertCircle size={14} className="mr-1"/>}
                               {chip.label}
-                              <button onClick={() => removeChip(chip.id)} className="p-0.5 bg-indigo-200 dark:bg-indigo-500/40 rounded-full hover:bg-indigo-300 dark:hover:bg-indigo-500/60"><X size={12} /></button>
+                              <button
+                                onClick={() => removeChip(chip.id)}
+                                className={`p-0.5 rounded-full
+                                    ${chip.isValid
+                                        ? 'bg-indigo-200 dark:bg-indigo-500/40 hover:bg-indigo-300 dark:hover:bg-indigo-500/60'
+                                        : 'bg-rose-200 dark:bg-rose-500/40 hover:bg-rose-300 dark:hover:bg-rose-500/60'
+                                    }
+                                `}
+                              ><X size={12} /></button>
                           </motion.div>
                       ))}
                       <input
@@ -144,7 +176,7 @@ const ChipSearchBar: React.FC<{
                           onKeyDown={handleKeyDown}
                           onFocus={() => setIsFocused(true)}
                           onBlur={() => setTimeout(() => setIsFocused(false), 200)}
-                          placeholder={chips.length === 0 ? "Buscar por nombre, DNI, grado, sección..." : ""}
+                          placeholder={chips.length === 0 ? "Buscar por nombre, DNI, rol, estado..." : ""}
                           className="flex-grow bg-transparent focus:outline-none min-w-[150px] dark:text-slate-100"
                       />
                     </div>
@@ -159,7 +191,7 @@ const ChipSearchBar: React.FC<{
                        {suggestions.map((sug, i) => (
                            <li key={`${sug.type}-${sug.value}`}>
                                <button
-                                  onClick={() => addChip({type: sug.type, value: sug.value, label: sug.label})}
+                                  onClick={() => addChip({type: sug.type, value: sug.value, label: sug.label, isValid: true})}
                                   className={`w-full text-left p-3 flex items-center justify-between transition-colors ${i === activeIndex ? 'bg-indigo-50 dark:bg-indigo-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}
                                 >
                                    <div className="flex items-center gap-3">

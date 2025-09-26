@@ -83,8 +83,7 @@ const App: React.FC = () => {
 
     useEffect(() => {
         const storedTheme = localStorage.getItem('theme');
-        const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (storedTheme === 'dark' || (!storedTheme && systemPrefersDark)) {
+        if (storedTheme === 'dark') {
             setTheme('dark');
         } else {
             setTheme('light');

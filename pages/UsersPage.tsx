@@ -15,14 +15,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import PageHeader from '../components/ui/PageHeader';
 import Button from '../components/ui/Button';
-import UserKpiCards from '../components/users/UserKpiCards';
 import UserTable from '../components/users/UserTable';
 import BulkActionBar from '../components/users/BulkActionBar';
 import UserDetailDrawer from '../components/users/UserDetailDrawer';
 import UserImportModal from '../components/users/UserImportModal';
 import ConfirmationModal from '../components/users/ConfirmationModal';
 import ChipSearchBar, { Chip } from '../components/ui/ChipSearchBar';
-import RoleTabs from '../components/users/RoleTabs';
+import RoleFilterChips from '../components/users/RoleFilterChips';
 
 // --- HELPER TYPES & FUNCTIONS ---
 const isStudent = (user: GenericUser): user is Student => 'studentCode' in user;
@@ -55,13 +54,13 @@ const UsersPage: React.FC = () => {
     // State
     const [chips, setChips] = useState<Chip[]>([]);
     const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'Todos');
-    const [activeStatusFilter, setActiveStatusFilter] = useState<UserStatus | 'Todos'>('Todos');
     const [drawerState, setDrawerState] = useState<{ open: boolean; user: GenericUser | null; initialTab?: string }>({ open: false, user: null });
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
     const [selectedUsers, setSelectedUsers] = useState<Set<string>>(new Set());
     const [sortConfig, setSortConfig] = useState<SortConfig | null>({ key: 'fullName', direction: 'asc' });
     const [isLoading, setIsLoading] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
+    const [searchQuery, setSearchQuery] = useState('');
     const [activityLogs, setActivityLogs] = useState<ActivityLog[]>(initialActivityLogs);
     const [confirmationModal, setConfirmationModal] = useState<ConfirmationModalState>({ isOpen: false, title: '', message: '', onConfirm: () => {} });
     
@@ -97,6 +96,8 @@ const UsersPage: React.FC = () => {
         setSearchParams(params);
         
         setIsLoading(true);
+        const textChip = debouncedChips.find(c => c.type === 'text' && c.isValid);
+        setSearchQuery(textChip ? textChip.value : '');
         const timer = setTimeout(() => setIsLoading(false), 500);
         return () => clearTimeout(timer);
     }, [debouncedChips, activeTab, setSearchParams, searchParams]);
@@ -104,25 +105,18 @@ const UsersPage: React.FC = () => {
     const filteredUsers = useMemo(() => {
         let results = [...users];
 
-        // 1. Apply Status Filter (from KPIs)
-        if (activeStatusFilter !== 'Todos') {
-            if (activeStatusFilter === 'Inactivo') {
-                results = results.filter(u => u.status === 'Inactivo' || u.status === 'Egresado');
-            } else {
-                results = results.filter(u => u.status === activeStatusFilter);
-            }
-        }
-
-        // 2. Apply Tab Filter (Roles)
+        // 1. Apply Tab Filter (Roles)
         if (activeTab !== 'Todos') {
             if (activeTab === 'Personal') results = results.filter(u => isStaff(u));
             else if (activeTab === 'Estudiantes') results = results.filter(u => isStudent(u));
             else if (activeTab === 'Apoderados') results = results.filter(u => isParent(u));
         }
 
-        if (debouncedChips.length > 0) {
+        const validChips = debouncedChips.filter(chip => chip.isValid);
+
+        if (validChips.length > 0) {
             results = results.filter(user => {
-                return debouncedChips.every(chip => {
+                return validChips.every(chip => {
                     const value = chip.value.toLowerCase();
                     switch (chip.type) {
                         case 'text':
@@ -130,16 +124,6 @@ const UsersPage: React.FC = () => {
                             const email = isParent(user) ? user.email : `${isStudent(user) ? user.studentCode : user.dni}@colegio.edu.pe`;
                             return name.toLowerCase().includes(value) || email.toLowerCase().includes(value);
                         
-                        case 'gradeSection':
-                            if (!isStudent(user)) return false;
-                            const gradeMatch = value.match(/^(\d)/);
-                            const sectionMatch = value.match(/([a-zA-Z])$/);
-                            if (!gradeMatch || !sectionMatch) return false;
-                            const gradeMap: { [key: string]: string } = { '1': 'Primer', '2': 'Segundo', '3': 'Tercero', '4': 'Cuarto', '5': 'Quinto', '6': 'Sexto' };
-                            const targetGrade = gradeMap[gradeMatch[1]];
-                            const targetSection = sectionMatch[1].toUpperCase();
-                            return user.grade === targetGrade && user.section === targetSection;
-
                         case 'dni':
                             const id = isStudent(user) ? user.documentNumber : user.dni;
                             return id.includes(chip.value);
@@ -147,8 +131,8 @@ const UsersPage: React.FC = () => {
                         case 'role':
                              return getRole(user).toLowerCase() === value;
                         
-                        case 'tag':
-                             return user.tags.some(tag => tag.toLowerCase().includes(value));
+                        case 'status':
+                            return user.status.toLowerCase() === value;
 
                         default:
                             return true;
@@ -186,7 +170,7 @@ const UsersPage: React.FC = () => {
         }
 
         return results;
-    }, [users, activeStatusFilter, activeTab, debouncedChips, sortConfig]);
+    }, [users, activeTab, debouncedChips, sortConfig]);
 
     const paginatedUsers = useMemo(() => {
         return filteredUsers.slice((currentPage - 1) * 50, currentPage * 50);
@@ -368,42 +352,51 @@ const UsersPage: React.FC = () => {
         </div>
     );
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        show: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+            },
+        },
+    };
+
+    const itemVariants = {
+        hidden: { y: 20, opacity: 0 },
+        show: { y: 0, opacity: 1, transition: { duration: 0.3, ease: 'easeOut' } },
+    };
+
     return (
-        // Main container with flex-col to structure the page vertically
-        <div className="flex flex-col h-full">
+        <motion.div
+            className="flex flex-col h-full"
+            variants={containerVariants}
+            initial="hidden"
+            animate="show"
+        >
             <PageHeader
                 title="Gestión de Usuarios"
-                subtitle="Administre perfiles, roles y permisos de todos los miembros de la comunidad educativa."
                 icon={Users}
                 actions={actions}
             />
             
-            {/* KPIs Section */}
-            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3 }}>
-                <UserKpiCards users={allUsers} activeStatus={activeStatusFilter} onStatusChange={setActiveStatusFilter} />
+            {/* Role Filter Chips Section */}
+            <motion.div variants={itemVariants} className="flex justify-center pt-4">
+                <RoleFilterChips allUsers={allUsers} activeRole={activeTab} onRoleChange={handleTabChange} />
             </motion.div>
 
             {/* Main content area */}
-            <div className="flex flex-col flex-grow mt-4 bg-white dark:bg-slate-900/50 p-4 rounded-xl shadow-lg border border-slate-200/80 dark:border-slate-800">
+            <motion.div
+                variants={itemVariants}
+                className="flex flex-col flex-grow mt-4 bg-white dark:bg-slate-900/50 p-4 rounded-xl shadow-lg border border-slate-200/80 dark:border-slate-800"
+            >
                 {/* Search and Filters */}
-                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.3, delay: 0.1 }}>
+                <div className="w-full max-w-2xl mx-auto">
                     <ChipSearchBar chips={chips} setChips={setChips} allUsers={allUsers}/>
-                </motion.div>
-
-                {/* Role Tabs */}
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.15 }}>
-                    <div className="mt-4">
-                        <RoleTabs allUsers={allUsers} activeTab={activeTab} onTabChange={handleTabChange} />
-                    </div>
-                </motion.div>
+                </div>
 
                 {/* Table */}
-                <motion.div
-                    className="flex-grow"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                >
+                <div className="flex-grow mt-4">
                     <UserTable
                         isLoading={isLoading}
                         users={paginatedUsers}
@@ -417,9 +410,10 @@ const UsersPage: React.FC = () => {
                         currentPage={currentPage}
                         totalPages={totalPages}
                         onPageChange={setCurrentPage}
+                        searchQuery={searchQuery}
                     />
-                </motion.div>
-            </div>
+                </div>
+            </motion.div>
             
             <BulkActionBar count={selectedUsers.size} onClear={() => setSelectedUsers(new Set())} onAction={handleBulkAction} />
 
@@ -430,6 +424,7 @@ const UsersPage: React.FC = () => {
                 allLogs={activityLogs}
                 onClose={() => setDrawerState({ open: false, user: null })}
                 onSave={handleSaveUser}
+                onAction={handleUserAction}
                 triggerElementRef={triggerElementRef}
                 initialTab={drawerState.initialTab}
             />
@@ -444,7 +439,7 @@ const UsersPage: React.FC = () => {
                 {...confirmationModal}
                 onClose={() => setConfirmationModal(prev => ({...prev, isOpen: false}))}
             />
-        </div>
+        </motion.div>
     );
 };
 
