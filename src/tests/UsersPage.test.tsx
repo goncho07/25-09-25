@@ -28,6 +28,9 @@ vi.mock('lucide-react', () => ({
   ChevronLeft: (props) => <div data-testid="icon-ChevronLeft" {...props} />,
   ChevronRight: (props) => <div data-testid="icon-ChevronRight" {...props} />,
   User: (props) => <div data-testid="icon-User" {...props} />,
+  // Icons added for UserKpiCards
+  CheckCircle: (props) => <div data-testid="icon-CheckCircle" {...props} />,
+  PowerOff: (props) => <div data-testid="icon-PowerOff" {...props} />,
 }));
 
 vi.mock('../../data/users', async () => ({
