@@ -1,5 +1,5 @@
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import React from 'react';
 
@@ -47,21 +47,23 @@ vi.mock('../../data/parents', async () => ({
 vi.mock('../../utils/pdfGenerator', () => ({
     generateCarnet: vi.fn(),
 }));
+vi.mock('../../hooks/useDebounce', () => ({
+  useDebounce: (value) => value,
+}));
 vi.mock('framer-motion', async () => {
     const React = await import('react');
     const actual = await vi.importActual('framer-motion');
-    return {
-        ...actual,
-        AnimatePresence: ({ children }) => children,
-        motion: {
-            ...actual.motion,
-            div: React.forwardRef(({ children, ...props }, ref) => <div {...props} ref={ref}>{children}</div>),
-            ul: ({ children, ...props }) => <ul {...props}>{children}</ul>,
-            li: ({ children, ...props }) => <li {...props}>{children}</li>,
-            header: ({ children, ...props }) => <header {...props}>{children}</header>,
-            button: ({ children, ...props }) => <button {...props}>{children}</button>,
-        },
-    };
+    const motionMock = new Proxy(actual.motion, {
+        get: (target, prop) => {
+            if (typeof prop !== 'string') return target[prop];
+            return React.forwardRef(({ children, ...props }, ref) => {
+                const { animate, initial, exit, variants, transition, whileHover, whileTap, whileFocus, whileInView, layout, layoutId, ...rest } = props;
+                const Component = prop as React.ElementType;
+                return <Component ref={ref} {...rest}>{children}</Component>;
+            });
+        }
+    });
+    return { ...actual, motion: motionMock, AnimatePresence: ({ children }) => <>{children}</> };
 });
 
 // Import the component under test after mocks are defined
@@ -76,67 +78,59 @@ const renderComponent = () => {
 };
 
 describe('UsersPage', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-  });
   afterEach(() => {
-    vi.useRealTimers();
+    window.history.pushState({}, '', '/');
   });
 
   it('should filter users by role when a role chip is clicked', async () => {
     renderComponent();
-    await act(async () => vi.runAllTimers());
     await screen.findByText('alan turing');
 
-    await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: /Estudiantes/i }));
-        vi.runAllTimers();
-    });
+    fireEvent.click(screen.getByRole('button', { name: /Estudiantes/i }));
 
-    const rows = await screen.findAllByRole('row');
-    expect(rows.length).toBe(4); // header + 3 students
-    expect(screen.getByText('alan turing')).toBeInTheDocument();
-    expect(screen.getByText('bernard lopez')).toBeInTheDocument();
-    expect(screen.queryByText('ana gomez')).not.toBeInTheDocument();
+    await waitFor(() => {
+        const rows = screen.getAllByRole('row');
+        expect(rows.length).toBe(4); // header + 3 students
+        expect(screen.getByText('alan turing')).toBeInTheDocument();
+        expect(screen.getByText('bernard lopez')).toBeInTheDocument();
+        expect(screen.queryByText('ana gomez')).not.toBeInTheDocument();
+    });
   });
 
   it('should create a valid chip and filter results for a valid search term', async () => {
     renderComponent();
-    await act(async () => vi.runAllTimers());
     await screen.findByText('alan turing');
 
     const searchInput = screen.getByPlaceholderText(/Buscar por nombre/i);
-    await act(async () => {
-        fireEvent.change(searchInput, { target: { value: 'ana gomez' } });
-        fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
-        vi.runAllTimers();
-    });
+    fireEvent.change(searchInput, { target: { value: 'ana gomez' } });
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
 
-    const rows = await screen.findAllByRole('row');
-    expect(rows.length).toBe(2); // header + 1 user
-    expect(screen.getByText('ana gomez')).toBeInTheDocument();
+    await waitFor(() => {
+        const rows = screen.getAllByRole('row');
+        expect(rows.length).toBe(2); // header + 1 user
+        const table = screen.getByRole('table');
+        expect(within(table).getByText('ana gomez')).toBeInTheDocument();
+    });
   });
 
   it('should create an invalid chip and not filter results for an invalid search term', async () => {
     renderComponent();
-    await act(async () => vi.runAllTimers());
     await screen.findByText('alan turing');
 
     const searchInput = screen.getByPlaceholderText(/Buscar por nombre/i);
-    await act(async () => {
-        fireEvent.change(searchInput, { target: { value: 'platano' } });
-        fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
-        vi.runAllTimers();
-    });
+    fireEvent.change(searchInput, { target: { value: 'platano' } });
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
 
     await screen.findByText('Inválido: "platano"');
-    const rows = screen.getAllByRole('row');
-    expect(rows.length).toBe(6); // header + 5 mock users
+
+    await waitFor(() => {
+        const rows = screen.getAllByRole('row');
+        expect(rows.length).toBe(6); // header + 5 mock users
+    });
   });
 
   it('should sort users correctly by name', async () => {
     renderComponent();
-    await act(async () => vi.runAllTimers());
 
     await waitFor(() => {
         const correctAscendingOrder = ['alan turing', 'ana gomez', 'bernard lopez', 'carlos diaz', 'zara perez'];
@@ -145,16 +139,36 @@ describe('UsersPage', () => {
         expect(names).toEqual(correctAscendingOrder);
     });
 
-    await act(async () => {
-        fireEvent.click(screen.getByRole('button', { name: /Nombre/i }));
-        vi.runAllTimers();
-    });
+    fireEvent.click(screen.getByRole('button', { name: /Nombre/i }));
 
     await waitFor(() => {
         const correctDescendingOrder = ['zara perez', 'carlos diaz', 'bernard lopez', 'ana gomez', 'alan turing'];
         const rows = screen.getAllByRole('row');
         const names = rows.slice(1).map(row => row.cells[1].querySelector('button').textContent.toLowerCase());
         expect(names).toEqual(correctDescendingOrder);
+    });
+  });
+
+  it('should restore user list when an invalid chip is removed', async () => {
+    renderComponent();
+    await screen.findByText('alan turing');
+
+    const searchInput = screen.getByPlaceholderText(/Buscar por nombre/i);
+    fireEvent.change(searchInput, { target: { value: 'platano' } });
+    fireEvent.keyDown(searchInput, { key: 'Enter', code: 'Enter' });
+
+    const invalidChip = await screen.findByText('Inválido: "platano"');
+    expect(invalidChip).toBeInTheDocument();
+
+    const closeButton = screen.getByTestId('icon-X').closest('button');
+    expect(closeButton).toBeInTheDocument();
+
+    fireEvent.click(closeButton);
+
+    await waitFor(() => {
+      const rows = screen.getAllByRole('row');
+      expect(rows.length).toBe(6);
+      expect(screen.queryByText('Inválido: "platano"')).not.toBeInTheDocument();
     });
   });
 });

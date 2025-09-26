@@ -45,7 +45,8 @@ const ChipSearchBar: React.FC<{
     };
 
     const removeChip = (id: string) => {
-        setChips(prev => prev.filter(c => c.id !== id));
+        const newChips = chips.filter(c => c.id !== id);
+        setChips(newChips);
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
