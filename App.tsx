@@ -79,16 +79,6 @@ const TeacherRoutes = () => (
 
 const App: React.FC = () => {
     const { isAuthenticated, user } = useAuthStore();
-    const { setTheme } = useUIStore();
-
-    useEffect(() => {
-        const storedTheme = localStorage.getItem('theme');
-        if (storedTheme === 'dark') {
-            setTheme('dark');
-        } else {
-            setTheme('light');
-        }
-    }, [setTheme]);
 
     if (!isAuthenticated) {
         return (

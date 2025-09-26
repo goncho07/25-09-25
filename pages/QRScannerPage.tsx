@@ -180,25 +180,25 @@ const QRScannerPage: React.FC = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-full max-h-[calc(100vh-140px)]">
-        <div className="lg:col-span-2 flex flex-col bg-slate-900 rounded-2xl shadow-2xl overflow-hidden">
+        <div className="lg:col-span-2 flex flex-col bg-gray-100 dark:bg-slate-900 rounded-2xl shadow-2xl overflow-hidden">
             <div className="relative w-full h-full min-h-[300px] flex items-center justify-center">
                 <video id="video" className={`w-full h-full object-cover ${!isScanning ? 'hidden' : ''}`}/>
                 {!isScanning && (
-                    <div className="text-center text-white p-8">
+                    <div className="text-center text-slate-800 dark:text-white p-8">
                         {isCameraReady ? (
                              <>
                                 <Camera size={64} className="mx-auto mb-4 opacity-50"/>
                                 <h2 className="text-2xl font-bold mb-2">Listo para escanear</h2>
-                                <p className="text-slate-400 mb-6">Presione "Iniciar Escaneo" para activar la cámara y tomar asistencia.</p>
+                                <p className="text-slate-500 dark:text-slate-400 mb-6">Presione "Iniciar Escaneo" para activar la cámara y tomar asistencia.</p>
                                 <button onClick={startScan} className="flex items-center justify-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-full font-semibold shadow-lg hover:bg-indigo-700 transition transform hover:scale-105">
                                     <Camera size={20} /> Iniciar Escaneo
                                 </button>
                              </>
                         ) : (
                              <>
-                                <CameraOff size={64} className="mx-auto mb-4 text-rose-400"/>
-                                <h2 className="text-2xl font-bold mb-2 text-rose-300">Cámara no disponible</h2>
-                                <p className="text-slate-400">{error}</p>
+                                <CameraOff size={64} className="mx-auto mb-4 text-rose-500 dark:text-rose-400"/>
+                                <h2 className="text-2xl font-bold mb-2 text-rose-600 dark:text-rose-300">Cámara no disponible</h2>
+                                <p className="text-slate-500 dark:text-slate-400">{error}</p>
                             </>
                         )}
                        
@@ -206,15 +206,15 @@ const QRScannerPage: React.FC = () => {
                 )}
                 {isScanning && (
                     <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="w-3/4 max-w-sm h-auto aspect-square border-4 border-white/50 rounded-2xl shadow-lg animate-pulse"></div>
+                        <div className="w-3/4 max-w-sm h-auto aspect-square border-4 border-slate-900/20 dark:border-white/50 rounded-2xl shadow-lg animate-pulse"></div>
                     </div>
                 )}
             </div>
              {isScanning && (
-                 <div className="p-4 bg-slate-800/50 flex items-center justify-between">
+                 <div className="p-4 bg-gray-200/50 dark:bg-slate-800/50 flex items-center justify-between">
                     <select 
                         onChange={(e) => setSelectedDeviceId(e.target.value)} 
-                        className="bg-slate-700 text-white text-sm rounded-lg p-2 border border-slate-600 focus:ring-indigo-500 focus:border-indigo-500"
+                        className="bg-white dark:bg-slate-700 text-slate-900 dark:text-white text-sm rounded-lg p-2 border border-slate-300 dark:border-slate-600 focus:ring-indigo-500 focus:border-indigo-500"
                         disabled={videoInputDevices.length <= 1}
                     >
                         {videoInputDevices.map(device => (
