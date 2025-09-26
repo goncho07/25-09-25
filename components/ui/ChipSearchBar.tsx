@@ -93,6 +93,12 @@ const ChipSearchBar: React.FC<{
         } else if (e.key === 'ArrowUp') {
             e.preventDefault();
             setActiveIndex(prev => (prev - 1 + (suggestions.length || 0)) % (suggestions.length || 1));
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            setInputValue('');
+            setSuggestions([]);
+            setActiveIndex(-1);
+            inputRef.current?.blur();
         }
     };
 
@@ -150,7 +156,7 @@ const ChipSearchBar: React.FC<{
                             className={`flex items-center gap-1.5 text-sm font-semibold pl-2.5 pr-1 py-0.5 rounded-full
                                 ${chip.isValid
                                     ? 'bg-indigo-100 dark:bg-indigo-500/20 text-indigo-700 dark:text-indigo-300'
-                                    : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300'
+                                    : 'bg-rose-100 dark:bg-rose-500/20 text-rose-700 dark:text-rose-300 ring-1 ring-inset ring-rose-300 dark:ring-rose-500/40'
                                 }
                             `}
                             title={!chip.isValid ? "Criterio no válido. No se aplicará como filtro." : ""}

@@ -40,7 +40,7 @@ type AllUserKeys = keyof Student | keyof Staff | keyof ParentTutor;
 interface SortConfigExtended { key: AllUserKeys, direction: 'asc' | 'desc' };
 
 const TableHeader: React.FC<{ columnKey: string, label: string, sortConfig: SortConfigExtended | null, onSort: (key: string) => void, className?: string }> = ({ columnKey, label, sortConfig, onSort, className = '' }) => (
-    <th className={`px-6 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap ${className}`}>
+    <th className={`p-4 text-sm font-semibold text-slate-600 dark:text-slate-300 whitespace-nowrap ${className}`}>
         <button onClick={() => onSort(columnKey)} className="flex items-center gap-1 group w-full h-full focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 rounded">
             {label}
             <div className="opacity-30 group-hover:opacity-100 transition-opacity">
@@ -73,10 +73,9 @@ const UserTableRow: React.FC<{ user: GenericUser, isSelected: boolean, onSelect:
         );
     };
     
-    // Improved class for the row for better visual feedback and spacing
     return (
-        <tr className={`border-b border-slate-100 dark:border-slate-700/70 transition-colors text-sm ${isSelected ? 'bg-indigo-50 dark:bg-indigo-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
-            <td onClick={e => e.stopPropagation()} className="sticky left-0 bg-inherit px-6 w-12 z-10 py-4">
+        <tr className={`transition-colors ${isSelected ? 'bg-indigo-50 dark:bg-indigo-500/10' : 'hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
+            <td onClick={e => e.stopPropagation()} className="sticky left-0 bg-inherit p-4 w-12 z-10">
                 <input
                     type="checkbox"
                     checked={isSelected}
@@ -84,25 +83,25 @@ const UserTableRow: React.FC<{ user: GenericUser, isSelected: boolean, onSelect:
                     className="h-5 w-5 cursor-pointer rounded-md border-2 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 focus:ring-2 dark:bg-slate-800 dark:checked:bg-indigo-600 transition-all duration-200"
                 />
             </td>
-            <td className="sticky left-12 bg-inherit px-6 min-w-64 z-10 py-4">
-                <div className="flex items-center gap-4">
+            <td className="sticky left-12 bg-inherit p-4 min-w-64 z-10">
+                <div className="flex items-center gap-3">
                     <img src={user.avatarUrl} alt={name} className="w-10 h-10 rounded-full object-cover" />
                     <div className="flex-grow">
-                        <button onClick={(e) => onAction('view-details', user, e)} className="text-left font-semibold text-slate-800 dark:text-slate-100 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-slate-900 rounded">
-                           {highlightMatch(name)}
+                        <button onClick={(e) => onAction('view-details', user, e)} className="text-left font-medium text-slate-800 dark:text-slate-100 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 dark:focus-visible:ring-offset-slate-900 rounded capitalize">
+                           {highlightMatch(name.toLowerCase())}
                         </button>
                     </div>
                 </div>
             </td>
-            <td className="px-6 py-4 text-slate-600 dark:text-slate-300">
+            <td className="p-4 text-slate-500 dark:text-slate-400">
                 <div className="flex items-center gap-2.5">{getRoleIcon(role)}<span>{role}</span></div>
             </td>
-            <td className="px-6 py-4 text-slate-600 dark:text-slate-300 whitespace-nowrap">{level}</td>
-            <td className="px-6 py-4"><span className={`inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full ${getStatusChipClass(user.status)}`}>{user.status}</span></td>
-            <td onClick={e => e.stopPropagation()} className="sticky right-0 bg-inherit px-6 py-4">
+            <td className="p-4 text-slate-500 dark:text-slate-400 whitespace-nowrap">{level}</td>
+            <td className="p-4"><span className={`inline-flex items-center px-2 py-1 text-xs font-semibold rounded-full ${getStatusChipClass(user.status)}`}>{user.status}</span></td>
+            <td onClick={e => e.stopPropagation()} className="sticky right-0 bg-inherit p-4">
                 <div className="flex items-center justify-center">
-                    <button onClick={(e) => onAction('view-details', user, e)} className="p-2 rounded-md hover:bg-slate-200/70 dark:hover:bg-slate-700/50 text-slate-500 dark:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500" aria-label="Ver detalles">
-                        <Eye size={16} />
+                    <button onClick={(e) => onAction('view-details', user, e)} className="p-2 rounded-full hover:bg-slate-200/70 dark:hover:bg-slate-700/50 text-slate-500 dark:text-slate-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500" aria-label="Ver detalles">
+                        <ChevronRight size={20} />
                     </button>
                 </div>
             </td>
@@ -111,22 +110,20 @@ const UserTableRow: React.FC<{ user: GenericUser, isSelected: boolean, onSelect:
 });
 
 const UserTableRowSkeleton = () => (
-    <tr className="border-b border-slate-100 dark:border-slate-700 h-[72px]">
-        <td className="sticky left-0 bg-inherit px-6 w-12 z-10"><div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-700 animate-pulse"></div></td>
-        <td className="sticky left-12 bg-inherit px-6 min-w-64 z-10">
+    <tr className="h-[76px]">
+        <td className="sticky left-0 bg-inherit p-4 w-12 z-10"><div className="h-4 w-4 rounded bg-slate-200 dark:bg-slate-700 animate-pulse"></div></td>
+        <td className="sticky left-12 bg-inherit p-4 min-w-64 z-10">
             <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
                 <div>
                     <div className="h-4 w-32 rounded bg-slate-200 dark:bg-slate-700 animate-pulse"></div>
-                    <div className="h-3 w-40 rounded bg-slate-200 dark:bg-slate-700 animate-pulse mt-1"></div>
                 </div>
             </div>
         </td>
-        <td className="px-6"><div className="h-4 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse"></div></td>
-        <td className="px-6"><div className="h-4 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse"></div></td>
-        <td className="px-6"><div className="h-4 w-16 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div></td>
-        <td className="px-6"><div className="flex gap-1"><div className="h-4 w-12 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div><div className="h-4 w-16 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div></div></td>
-        <td className="px-6"><div className="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse mx-auto"></div></td>
+        <td className="p-4"><div className="h-4 w-24 rounded bg-slate-200 dark:bg-slate-700 animate-pulse"></div></td>
+        <td className="p-4"><div className="h-4 w-20 rounded bg-slate-200 dark:bg-slate-700 animate-pulse"></div></td>
+        <td className="p-4"><div className="h-4 w-16 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse"></div></td>
+        <td className="p-4"><div className="h-6 w-6 rounded-full bg-slate-200 dark:bg-slate-700 animate-pulse mx-auto"></div></td>
     </tr>
 );
 
@@ -193,26 +190,26 @@ const UserTable: React.FC<UserTableProps> = ({
 
     return (
         <div className="flex flex-col h-full">
-            <div className="flex-grow overflow-auto border border-slate-200/80 dark:border-slate-700/80 rounded-t-xl">
-                <table className="w-full">
-                    <thead className="sticky top-0 z-20 bg-slate-50 dark:bg-slate-800/80 backdrop-blur-sm">
-                        <tr className="border-b border-slate-200 dark:border-slate-700">
-                            <th className="sticky left-0 bg-slate-50 dark:bg-slate-800/80 px-6 w-12 z-20">
+            <div className="overflow-x-auto rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+                <table className="w-full text-left">
+                    <thead className="bg-slate-50 dark:bg-slate-900/50">
+                        <tr className="border-b-2 border-slate-100 dark:border-slate-700">
+                            <th className="p-4 w-12">
                                 <input
                                     type="checkbox"
                                     checked={isPageSelected}
                                     onChange={handleSelectAll}
-                                    className="h-5 w-5 cursor-pointer rounded-md border-2 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 focus:ring-2 dark:bg-slate-800 dark:checked:bg-indigo-600 transition-all duration-200"
+                                    className="h-5 w-5 cursor-pointer rounded-md border-2 border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 focus:ring-offset-0 focus:ring-2 dark:bg-slate-900 dark:checked:bg-indigo-600 transition-all duration-200"
                                 />
                             </th>
-                            <TableHeader columnKey="fullName" label="Nombre" sortConfig={sortConfig} onSort={handleSort} className="sticky left-12 min-w-64" />
+                            <TableHeader columnKey="fullName" label="Nombre" sortConfig={sortConfig} onSort={handleSort} />
                             <TableHeader columnKey="role" label="Rol" sortConfig={sortConfig} onSort={handleSort} />
                             <TableHeader columnKey="sede" label="Nivel/Área" sortConfig={sortConfig} onSort={handleSort} />
                             <TableHeader columnKey="status" label="Estado" sortConfig={sortConfig} onSort={handleSort} />
-                            <th className="px-6 py-3 text-sm font-semibold text-slate-600 dark:text-slate-300 text-center sticky right-0 bg-slate-50 dark:bg-slate-800/80 z-20">Acciones</th>
+                            <th className="p-4 text-sm font-semibold text-slate-600 dark:text-slate-300 text-center">Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                         {isLoading ? (
                             Array.from({ length: 10 }).map((_, i) => <UserTableRowSkeleton key={i}/>)
                         ) : users.length > 0 ? (
